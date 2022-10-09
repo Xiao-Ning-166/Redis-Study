@@ -1,0 +1,36 @@
+server:
+  port: 8081
+
+spring:
+  # 数据库相关配置
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/heima_redis?characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+
+  # redis相关配置
+  redis:
+    host: localhost
+    port: 6379
+    lettuce:
+      # 连接池配置
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 4
+        max-wait: 100
+
+  # jackson相关配置
+  jackson:
+    # json处理时忽略空字段
+    default-property-inclusion: non_null
+
+mybatis-plus:
+  configuration:
+    # 在控制台打印sql文件
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    banner: false
+  mapper-location: classpath:mybatis/mapper/*.xml
