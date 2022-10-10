@@ -34,8 +34,17 @@ public class RedisConstants {
     public static final String CACHE_SHOP_PREFIX = "cache:shop:";
 
     /**
+     * shop商铺缓存的有效期。单位：分钟
+     */
+    public static final Long CACHE_SHOP_TTL = 30L;
+
+    /**
      * shop-type商铺类型缓存Redis的key
      */
     public static final String CACHE_SHOP_TYPE_KEY = "cache:shop-type:list";
 
+    /**
+     * shop-type商铺类型缓存Redis的有效期。单位：分钟
+     */
+    public static final Long CACHE_SHOP_TYPE_TTL = 60L;
 }

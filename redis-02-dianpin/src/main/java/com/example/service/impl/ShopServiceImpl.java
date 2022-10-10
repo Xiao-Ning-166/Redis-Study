@@ -10,8 +10,10 @@ import com.example.utils.RedisConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 商铺服务实现类
@@ -55,8 +57,32 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         // 6、存在，存入缓存中
         Map<String, Object> shop2Map = BeanUtil.beanToMap(shop);
         redisTemplate.opsForHash().putAll(shopKey, shop2Map);
+        redisTemplate.expire(shopKey, RedisConstants.CACHE_SHOP_TTL, TimeUnit.MINUTES);
 
         // 7、返回商铺信息
         return Result.ok(shop);
+    }
+
+    /**
+     * 修改商铺信息
+     *
+     * @param shop
+     */
+    @Override
+    @Transactional
+    public Result<?> update(Shop shop) {
+        // 1、判断id是否存在
+        Long shopId = shop.getId();
+        if (shopId == null) {
+            return Result.fail("商铺id不能为空！");
+        }
+
+        // 2、更新数据库
+        updateById(shop);
+
+        // 3、删除缓存中的数据
+        redisTemplate.delete(RedisConstants.CACHE_SHOP_PREFIX + shopId);
+
+        return Result.ok();
     }
 }

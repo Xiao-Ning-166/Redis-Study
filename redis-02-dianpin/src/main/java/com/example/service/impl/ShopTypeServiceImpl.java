@@ -13,9 +13,11 @@ import org.apache.ibatis.annotations.Mapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -54,8 +56,8 @@ public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> i
             return Result.fail("不存在商铺类型信息！");
         }
 
-        // 5、存在，存储redis中
-        redisTemplate.opsForValue().set(shopTypeKey, shopTypeListByDB);
+        // 5、存在，存储redis中，并设置有效期
+        redisTemplate.opsForValue().set(shopTypeKey, shopTypeListByDB, RedisConstants.CACHE_SHOP_TYPE_TTL, TimeUnit.MINUTES);
 
         // 6、返回数据
         return Result.ok(shopTypeListByDB);
