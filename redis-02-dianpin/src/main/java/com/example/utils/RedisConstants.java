@@ -47,4 +47,9 @@ public class RedisConstants {
      * shop-type商铺类型缓存Redis的有效期。单位：分钟
      */
     public static final Long CACHE_SHOP_TYPE_TTL = 60L;
+
+    /**
+     * 缓存空值的有效期。单位：分钟
+     */
+    public static final Long CACHE_NULL_TTL = 1L;
 }

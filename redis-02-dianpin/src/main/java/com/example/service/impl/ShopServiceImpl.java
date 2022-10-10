@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -46,11 +47,23 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             return Result.ok(shop);
         }
 
+        // 判断是否是空对象
+        if ("".equals(shopMap.get(""))) {
+            // 空对象，返回错误信息
+            return Result.fail("商铺信息不存在");
+        }
+
         // 4、不存在，从数据库中查询
         Shop shop = getById(id);
 
         if (shop == null) {
-            // 5、不存在，返回错误信息
+            // 5、不存在
+            // 5.1、缓存空值
+            Map shopOfNull = new HashMap();
+            shopOfNull.put("", "");
+            redisTemplate.opsForHash().putAll(shopKey, shopOfNull);
+            redisTemplate.expire(shopKey, RedisConstants.CACHE_NULL_TTL, TimeUnit.MINUTES);
+            // 5.2、返回错误信息
             return Result.fail("商铺信息不存在！");
         }
 
