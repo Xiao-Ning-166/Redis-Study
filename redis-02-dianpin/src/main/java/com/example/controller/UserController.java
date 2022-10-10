@@ -4,6 +4,7 @@ import com.example.dto.LoginFormDTO;
 import com.example.dto.Result;
 import com.example.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +44,16 @@ public class UserController {
     @PostMapping("/login")
     public Result login(@RequestBody LoginFormDTO loginFormDTO) {
        return userService.login(loginFormDTO);
+    }
+
+    /**
+     * 获取个人信息
+     *
+     * @return
+     */
+    @GetMapping("/me")
+    public Result me(){
+        return userService.getProfile();
     }
 
 }

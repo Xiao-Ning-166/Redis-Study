@@ -28,4 +28,14 @@ public class RedisConstants {
      */
     public static final Long TOKEN_TTL = 30L;
 
+    /**
+     * shop商铺缓存Redis的前缀
+     */
+    public static final String CACHE_SHOP_PREFIX = "cache:shop:";
+
+    /**
+     * shop-type商铺类型缓存Redis的key
+     */
+    public static final String CACHE_SHOP_TYPE_KEY = "cache:shop-type:list";
+
 }

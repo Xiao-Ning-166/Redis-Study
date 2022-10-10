@@ -26,6 +26,7 @@ spring:
   jackson:
     # json处理时忽略空字段
     default-property-inclusion: non_null
+    date-format: yyyy-MM-dd HH:mm:ss
 
 mybatis-plus:
   configuration:

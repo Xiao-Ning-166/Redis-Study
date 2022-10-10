@@ -27,6 +27,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new LoginInterceptor(redisTemplate))
                 // 排除不拦截的路径
-                .excludePathPatterns("/user/code", "/user/login");
+                .excludePathPatterns("/user/code", "/user/login", "/shop/**");
     }
 }

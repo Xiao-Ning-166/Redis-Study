@@ -14,6 +14,7 @@ import com.example.service.IUserService;
 import com.example.utils.RedisConstants;
 import com.example.utils.RegexUtils;
 import com.example.utils.SystemConstants;
+import com.example.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -110,6 +111,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
         // 7、返回token
         return Result.ok(token);
+    }
+
+    /**
+     * 获取个人信息
+     *
+     * @return
+     */
+    @Override
+    public Result getProfile() {
+        UserDTO userDTO = UserHolder.getUser();
+        if (userDTO == null) {
+            return Result.fail("请先登录！");
+        }
+        return Result.ok(UserHolder.getUser());
     }
 
     /**

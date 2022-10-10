@@ -63,6 +63,12 @@
             <version>${hutool.version}</version>
         </dependency>
 
+        <!-- 在默认情况下Java 8不支持LocalDateTime的依赖 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

@@ -28,4 +28,11 @@ public interface IUserService extends IService<User> {
      * @return
      */
     Result login(LoginFormDTO loginFormDTO);
+
+    /**
+     * 获取个人信息
+     *
+     * @return
+     */
+    Result getProfile();
 }

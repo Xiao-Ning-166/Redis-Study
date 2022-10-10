@@ -13,4 +13,13 @@ public class SystemConstants {
      */
     public static final String DEFAULT_NICK_NAME_PREFIX = "user_";
 
+    /**
+     * 每页默认大小
+     */
+    public static final Integer DEFAULT_PAGE_SIZE = 5;
+
+    /**
+     * 最大页数
+     */
+    public static final Long MAX_PAGE_SIZE = 10L;
 }
