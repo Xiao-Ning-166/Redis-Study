@@ -52,4 +52,14 @@ public class RedisConstants {
      * 缓存空值的有效期。单位：分钟
      */
     public static final Long CACHE_NULL_TTL = 1L;
+
+    /**
+     * 互斥锁的有效期。单位：秒
+     */
+    public static final Long CACHE_MUTEX_LOCK_TTL = 10L;
+
+    /**
+     * 商铺互斥锁的前缀
+     */
+    public static final String LOCK_SHOP_PREFIX = "lock:shop:";
 }
