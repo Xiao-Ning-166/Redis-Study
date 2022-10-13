@@ -9,6 +9,7 @@ import com.example.mapper.ShopMapper;
 import com.example.service.IShopService;
 import com.example.utils.RedisConstants;
 import com.example.utils.RedisData;
+import com.example.utils.RedisUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,9 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             new ThreadPoolExecutor(5, 10, 30,
                     TimeUnit.SECONDS, new LinkedBlockingQueue<>(10));
 
+    @Autowired
+    private RedisUtils redisUtils;
+
     /**
      * 根据id查询商铺信息。先从缓存中查，缓存没有再去数据库
      *
@@ -56,7 +60,20 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         // return queryShopWithCacheBreakdownByMutex(id);
 
         // 基于逻辑过期的缓存击穿解决方案
-        return queryShopWithCacheBreakdownByLogicExpire(id);
+        // return queryShopWithCacheBreakdownByLogicExpire(id);
+
+        // 使用Redis工具类查询数据（缓解缓存穿透）
+        // Shop shop = redisUtils.getWithCachePenetrate(RedisConstants.CACHE_SHOP_PREFIX, id, Shop.class,
+        //         this::getById, 10L, TimeUnit.SECONDS);
+
+        // 使用Redis工具类（解决缓存击穿）
+        Shop shop = redisUtils.getWithLogicExpire(RedisConstants.CACHE_SHOP_PREFIX, id, Shop.class,
+                this::getById, 10L, TimeUnit.SECONDS);
+
+        if (shop == null) {
+            return Result.fail("商铺信息不存在！");
+        }
+        return Result.ok(shop);
     }
 
     /**
@@ -183,7 +200,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     }
 
     /**
-     * 从数据库想Redis写入数据
+     * 从数据库向Redis写入数据
      *
      * @param id
      * @param expireSeconds 过期时间。单位：秒
