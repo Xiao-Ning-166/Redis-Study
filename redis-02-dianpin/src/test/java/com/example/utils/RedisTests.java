@@ -1,4 +1,4 @@
-package com.example;
+package com.example.utils;
 
 import com.example.entity.Shop;
 import com.example.service.IShopService;
