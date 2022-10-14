@@ -63,12 +63,12 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         // return queryShopWithCacheBreakdownByLogicExpire(id);
 
         // 使用Redis工具类查询数据（缓解缓存穿透）
-        // Shop shop = redisUtils.getWithCachePenetrate(RedisConstants.CACHE_SHOP_PREFIX, id, Shop.class,
-        //         this::getById, 10L, TimeUnit.SECONDS);
-
-        // 使用Redis工具类（解决缓存击穿）
-        Shop shop = redisUtils.getWithLogicExpire(RedisConstants.CACHE_SHOP_PREFIX, id, Shop.class,
+        Shop shop = redisUtils.getWithCachePenetrate(RedisConstants.CACHE_SHOP_PREFIX, id, Shop.class,
                 this::getById, 10L, TimeUnit.SECONDS);
+
+        // 使用Redis工具类（解决缓存击穿）需要提前将数据加入缓存
+        // Shop shop = redisUtils.getWithLogicExpire(RedisConstants.CACHE_SHOP_PREFIX, id, Shop.class,
+        //         this::getById, 10L, TimeUnit.SECONDS);
 
         if (shop == null) {
             return Result.fail("商铺信息不存在！");

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.VoucherMapper">
+
+    <!-- 根据商铺id查询商铺优惠券信息 -->
+    <select id="queryVoucherOfShop" resultType="com.example.entity.Voucher">
+        SELECT
+            t1.`id`, t1.`shop_id`, t1.`title`, t1.`sub_title`, t1.`rules`, t1.`pay_value`,
+            t1.`actual_value`, t1.`type`, t2.`stock` , t2.`begin_time` , t2.`end_time`
+        FROM
+            tb_voucher AS t1
+            LEFT JOIN tb_seckill_voucher AS t2 ON t1.id = t2.voucher_id
+        WHERE
+            t1.shop_id = #{shopId} AND t1.status = 1
+    </select>
+
+</mapper>
