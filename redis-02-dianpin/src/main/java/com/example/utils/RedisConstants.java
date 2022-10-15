@@ -62,4 +62,9 @@ public class RedisConstants {
      * 商铺互斥锁的前缀
      */
     public static final String LOCK_SHOP_PREFIX = "lock:shop:";
+
+    /**
+     * 分布式锁的前缀
+     */
+    public static final String LOCK_PREFIX = "lock:";
 }
