@@ -21,6 +21,7 @@
         <java.version>1.8</java.version>
         <mybatis-plus.version>3.4.2</mybatis-plus.version>
         <hutool.version>5.7.22</hutool.version>
+        <redisson.version>3.13.6</redisson.version>
     </properties>
 
     <dependencies>
@@ -40,6 +41,13 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
+        </dependency>
+
+        <!-- redisson依赖 -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>${redisson.version}</version>
         </dependency>
 
         <!-- mybatis-plus依赖 -->
