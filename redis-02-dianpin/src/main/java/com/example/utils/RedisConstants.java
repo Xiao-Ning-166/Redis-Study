@@ -67,4 +67,14 @@ public class RedisConstants {
      * 分布式锁的前缀
      */
     public static final String LOCK_PREFIX = "lock:";
+
+    /**
+     * 存储秒杀优惠券库存的前缀
+     */
+    public static final String SECKILL_STOCK_PREFIX = "seckill:stock:";
+
+    /**
+     * 存储购买秒杀优惠券用户id的前缀
+     */
+    public static final String SECKILL_ORDER_PREFIX = "seckill:order:";
 }

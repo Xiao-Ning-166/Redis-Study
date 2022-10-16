@@ -7,7 +7,9 @@ import com.example.entity.Voucher;
 import com.example.mapper.VoucherMapper;
 import com.example.service.ISeckillVoucherService;
 import com.example.service.IVoucherService;
+import com.example.utils.RedisConstants;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,9 @@ public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher> impl
     @Autowired
     private ISeckillVoucherService seckillVoucherService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
     /**
      * 新增秒杀优惠券
      *
@@ -45,6 +50,9 @@ public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher> impl
         seckillVoucher.setBeginTime(voucher.getBeginTime());
         seckillVoucher.setEndTime(voucher.getEndTime());
         seckillVoucherService.save(seckillVoucher);
+
+        // 3、保存秒杀优惠券库存信息到Redis
+        redisTemplate.opsForValue().set(RedisConstants.SECKILL_STOCK_PREFIX + seckillVoucher.getVoucherId(), seckillVoucher.getStock());
     }
 
     /**

@@ -13,10 +13,18 @@ import com.example.entity.VoucherOrder;
 public interface IVoucherOrderService extends IService<VoucherOrder> {
 
     /**
-     * 抢购秒杀优惠券
+     * 抢购秒杀优惠券（同步执行）
      *
      * @param voucherId
      * @return
      */
-    Result seckillVoucher(Long voucherId);
+    Result seckillVoucherSync(Long voucherId);
+
+    /**
+     * 抢购秒杀优惠券（异步执行）
+     *
+     * @param voucherId
+     * @return
+     */
+    Result seckillVoucherAsync(Long voucherId);
 }

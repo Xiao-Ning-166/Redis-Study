@@ -15,11 +15,21 @@ import com.example.utils.UserHolder;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -42,13 +52,149 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     private RedissonClient redissonClient;
 
     /**
+     * 判断有无购买资格的脚本
+     */
+    private static final DefaultRedisScript SECKILL_SCRIPT;
+
+    /**
+     * 初始化释放锁的脚本
+     */
+    static {
+        SECKILL_SCRIPT = new DefaultRedisScript();
+        // 从类路径加载释放锁的脚本
+        SECKILL_SCRIPT.setLocation(new ClassPathResource("lua/seckill.lua"));
+        // 设置返回值类型
+        SECKILL_SCRIPT.setResultType(Long.class);
+    }
+
+    /**
+     * 秒杀下单的阻塞队列
+     */
+    private BlockingQueue<VoucherOrder> seckillTasks = new ArrayBlockingQueue<>(1024 * 1024);
+
+    private static final ExecutorService SECKILL_TASK_EXECUTOR = Executors.newSingleThreadExecutor();
+
+    @PostConstruct
+    private void init() {
+        SECKILL_TASK_EXECUTOR.submit(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        // 1、从阻塞队列中获取订单信息
+                        VoucherOrder voucherOrder = seckillTasks.take();
+                        // 2、创建订单
+                        createVoucherOrderWithBlockingQueue(voucherOrder);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+    }
+
+    /**
      * 抢购秒杀优惠券
      *
      * @param voucherId
      * @return
      */
     @Override
-    public Result seckillVoucher(Long voucherId) {
+    public Result seckillVoucherAsync(Long voucherId) {
+        UserDTO user = UserHolder.getUser();
+        String stockPrefix = RedisConstants.SECKILL_STOCK_PREFIX;
+        String orderPrefix = RedisConstants.SECKILL_ORDER_PREFIX;
+        // 1、执行lua脚本判断用户是否有购买资格
+        Long seckillRes = (Long) stringRedisTemplate.execute(
+                SECKILL_SCRIPT,
+                Arrays.asList(stockPrefix, orderPrefix),
+                voucherId.toString(), user.getId().toString()
+        );
+        // 拆箱。避免出现空指针
+        long r = seckillRes.longValue();
+        if (r != 0) {
+            // 没有购买资格，返回错误信息
+            return Result.fail(r == 1 ? "库存不足！" : "每人限购一单！");
+        }
+
+        // 2、有购买资格，生成订单id，保存队列中
+        VoucherOrder voucherOrder = new VoucherOrder();
+        long voucherOrderId = redisIdWorker.getId("order");
+        voucherOrder.setVoucherId(voucherId);
+        voucherOrder.setUserId(user.getId());
+        voucherOrder.setId(voucherOrderId);
+        // 使用阻塞队列进行异步下单
+        seckillTasks.add(voucherOrder);
+
+        // 3、返回订单信息
+        return Result.ok(voucherOrderId);
+    }
+
+    /**
+     * 基于阻塞队列创建订单
+     *
+     * @param voucherOrder
+     */
+    private void createVoucherOrderWithBlockingQueue(VoucherOrder voucherOrder) {
+        Long userId = voucherOrder.getUserId();
+        Long voucherId = voucherOrder.getVoucherId();
+
+        // 创建锁对象
+        RLock lock = redissonClient.getLock(RedisConstants.LOCK_PREFIX + "order:" + userId);
+        // 获取锁
+        boolean isLock = false;
+        try {
+            isLock = lock.tryLock(1L, 10L, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (!isLock) {
+            // 获取锁失败，返回错误信息
+            log.error("每人限购一单！");
+            return ;
+        }
+
+        try {
+            // 1、一人一单
+            // 1.1、根据用户id、优惠券id查询订单
+            Integer count = query().eq("user_id", userId).eq("voucher_id", voucherId).count();
+            if (count > 0) {
+                // 已经存在
+                log.error("每人限购一单！");
+                return ;
+            }
+
+            // 2、扣库存
+            boolean isSuccess = seckillVoucherService.update()
+                    // 扣减库存
+                    .setSql("stock = stock - 1")
+                    .eq("voucher_id", voucherId)
+                    // 判断库存是否大于0
+                    .gt("stock", 0).update();
+            if (!isSuccess) {
+                // 扣库存失败
+                log.error("库存不足！");
+                return ;
+            }
+
+            // 3、生成订单
+            // 3.1、保存订单信息
+            save(voucherOrder);
+        } finally {
+            // 释放锁
+            lock.unlock();
+        }
+    }
+
+
+    /**
+     * 抢购秒杀优惠券（同步执行）
+     *
+     * @param voucherId
+     * @return
+     */
+    @Override
+    public Result seckillVoucherSync(Long voucherId) {
         // 1、获取优惠券信息
         SeckillVoucher seckillVoucher = seckillVoucherService.getById(voucherId);
 

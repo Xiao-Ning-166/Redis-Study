@@ -25,7 +25,10 @@ public class VoucherOrderController {
 
     @PostMapping("seckill/{id}")
     public Result seckillVoucher(@PathVariable("id") Long voucherId) {
-        // 抢购秒杀优惠券
-        return voucherOrderService.seckillVoucher(voucherId);
+        // 抢购秒杀优惠券（同步执行）
+        // return voucherOrderService.seckillVoucherSync(voucherId);
+
+        // 抢购秒杀优惠券（异步执行）
+        return voucherOrderService.seckillVoucherAsync(voucherId);
     }
 }
