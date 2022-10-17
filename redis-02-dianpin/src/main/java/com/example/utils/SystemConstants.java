@@ -22,4 +22,9 @@ public class SystemConstants {
      * 最大页数
      */
     public static final Long MAX_PAGE_SIZE = 10L;
+
+    /**
+     * 照片上传路径
+     */
+    public static final String IMAGE_UPLOAD_DIR = "D:\\Code\\My_Project\\Redis-Study\\redis-02-dianpin\\nginx-1.18.0\\html\\hmdp\\imgs\\";
 }

@@ -10,4 +10,12 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface BlogMapper extends BaseMapper<Blog> {
+
+    /**
+     * 根据id查询博客信息
+     *
+     * @param id
+     * @return
+     */
+    Blog queryBlogById(Long id);
 }

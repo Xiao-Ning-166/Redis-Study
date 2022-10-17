@@ -2,14 +2,18 @@ package com.example.controller;
 
 import com.example.dto.LoginFormDTO;
 import com.example.dto.Result;
+import com.example.entity.UserInfo;
+import com.example.service.IUserInfoService;
 import com.example.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpSession;
 
 /**
@@ -22,6 +26,9 @@ public class UserController {
 
     @Autowired
     private IUserService userService;
+
+    @Resource
+    private IUserInfoService userInfoService;
 
     /**
      * 获取手机验证码
@@ -54,6 +61,21 @@ public class UserController {
     @GetMapping("/me")
     public Result me(){
         return userService.getProfile();
+    }
+
+
+    @GetMapping("/info/{id}")
+    public Result info(@PathVariable("id") Long userId){
+        // 查询详情
+        UserInfo info = userInfoService.getById(userId);
+        if (info == null) {
+            // 没有详情，应该是第一次查看详情
+            return Result.ok();
+        }
+        info.setCreateTime(null);
+        info.setUpdateTime(null);
+        // 返回
+        return Result.ok(info);
     }
 
 }

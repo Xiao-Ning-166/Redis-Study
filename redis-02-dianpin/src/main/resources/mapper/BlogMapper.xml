@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.BlogMapper">
+
+    <!-- 根据id查询博客信息 -->
+    <select id="queryBlogById" resultType="com.example.entity.Blog">
+        SELECT
+            t1.id, t1.shop_id, t2.id AS user_id, t2.icon, t2.nick_name AS name,
+            t1.title, t1.images, t1.content, t1.liked, t1.comments,
+            t1.create_time, t1.update_time
+        FROM
+            tb_blog AS t1
+            LEFT JOIN tb_user AS t2 ON t1.user_id = t2.id
+        WHERE
+            t1.id = #{id}
+    </select>
+
+</mapper>
