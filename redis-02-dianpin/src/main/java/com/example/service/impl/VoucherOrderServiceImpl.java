@@ -1,5 +1,7 @@
 package com.example.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.dto.Result;
 import com.example.dto.UserDTO;
@@ -16,14 +18,22 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.redis.connection.stream.Consumer;
+import org.springframework.data.redis.connection.stream.MapRecord;
+import org.springframework.data.redis.connection.stream.ReadOffset;
+import org.springframework.data.redis.connection.stream.StreamOffset;
+import org.springframework.data.redis.connection.stream.StreamReadOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
@@ -76,6 +86,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     @PostConstruct
     private void init() {
+        /* // 阻塞队列的方式
         SECKILL_TASK_EXECUTOR.submit(new Runnable() {
             @Override
             public void run() {
@@ -91,6 +102,71 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
                 }
             }
         });
+        */
+        SECKILL_TASK_EXECUTOR.submit(new Runnable() {
+            @Override
+            public void run() {
+                String queueName = "stream.orders";
+                while (true) {
+                    try {
+                        // 1、从Redis消息队列中获取消息
+                        List<MapRecord<String, Object, Object>> list = stringRedisTemplate.opsForStream().read(
+                                Consumer.from("g1", "c1"),
+                                StreamReadOptions.empty().count(1).block(Duration.ofSeconds(2)),
+                                StreamOffset.create(queueName, ReadOffset.lastConsumed())
+                        );
+                        // 2、判断消息是否为空
+                        if (CollectionUtil.isEmpty(list)) {
+                            // 为空，说明没有消息，继续下一次循环
+                            continue;
+                        }
+                        // 3、有消息，解析消息
+                        MapRecord<String, Object, Object> record = list.get(0);
+                        Map<Object, Object> recordValue = record.getValue();
+                        VoucherOrder voucherOrder = BeanUtil.fillBeanWithMap(recordValue, new VoucherOrder(), false);
+                        // 4、创建订单
+                        createVoucherOrderWithStream(voucherOrder);
+                        // 5、确认消息
+                        stringRedisTemplate.opsForStream().acknowledge(queueName, "g1", record.getId());
+                    } catch (Exception e) {
+                        // 记录异常
+                        log.error("创建订单异常", e);
+                        // 处理pending-list中的消息
+                        handlePendingList();
+                    }
+                }
+            }
+        });
+    }
+
+    private void handlePendingList() {
+        String queueName = "stream.orders";
+        while (true) {
+            try {
+                // 1、从Redis消息队列中获取消息
+                List<MapRecord<String, Object, Object>> list = stringRedisTemplate.opsForStream().read(
+                        Consumer.from("g1", "c1"),
+                        StreamReadOptions.empty().count(1).block(Duration.ofSeconds(2)),
+                        StreamOffset.create(queueName, ReadOffset.from("0"))
+                );
+                // 2、判断消息是否为空
+                if (CollectionUtil.isEmpty(list)) {
+                    // 为空，说明pending-list中没有已消费但未确认的消息，跳出循环
+                    break;
+                }
+                // 3、有消息，解析消息
+                MapRecord<String, Object, Object> record = list.get(0);
+                Map<Object, Object> recordValue = record.getValue();
+                VoucherOrder voucherOrder = BeanUtil.fillBeanWithMap(recordValue, new VoucherOrder(), false);
+                // 4、创建订单
+                createVoucherOrderWithStream(voucherOrder);
+                // 5、确认消息
+                stringRedisTemplate.opsForStream().acknowledge(queueName, "g1", record.getId());
+            } catch (Exception e) {
+                // 记录异常
+                log.error("创建订单异常", e);
+            }
+        }
     }
 
     /**
@@ -104,11 +180,13 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         UserDTO user = UserHolder.getUser();
         String stockPrefix = RedisConstants.SECKILL_STOCK_PREFIX;
         String orderPrefix = RedisConstants.SECKILL_ORDER_PREFIX;
+        // 生成订单id
+        long voucherOrderId = redisIdWorker.getId("order");
         // 1、执行lua脚本判断用户是否有购买资格
         Long seckillRes = (Long) stringRedisTemplate.execute(
                 SECKILL_SCRIPT,
                 Arrays.asList(stockPrefix, orderPrefix),
-                voucherId.toString(), user.getId().toString()
+                voucherId.toString(), user.getId().toString(), String.valueOf(voucherOrderId)
         );
         // 拆箱。避免出现空指针
         long r = seckillRes.longValue();
@@ -118,6 +196,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }
 
         // 2、有购买资格，生成订单id，保存队列中
+        /*
         VoucherOrder voucherOrder = new VoucherOrder();
         long voucherOrderId = redisIdWorker.getId("order");
         voucherOrder.setVoucherId(voucherId);
@@ -125,9 +204,66 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         voucherOrder.setId(voucherOrderId);
         // 使用阻塞队列进行异步下单
         seckillTasks.add(voucherOrder);
+        */
 
         // 3、返回订单信息
         return Result.ok(voucherOrderId);
+    }
+
+    /**
+     * 基于Redis的Stream消息队列创建订单
+     *
+     * @param voucherOrder
+     */
+    private void createVoucherOrderWithStream(VoucherOrder voucherOrder) {
+        Long userId = voucherOrder.getUserId();
+        Long voucherId = voucherOrder.getVoucherId();
+
+        // 创建锁对象
+        RLock lock = redissonClient.getLock(RedisConstants.LOCK_PREFIX + "order:" + userId);
+        // 获取锁
+        boolean isLock = false;
+        try {
+            isLock = lock.tryLock(1L, 10L, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (!isLock) {
+            // 获取锁失败，返回错误信息
+            log.error("每人限购一单！");
+            return ;
+        }
+
+        try {
+            // 1、一人一单
+            // 1.1、根据用户id、优惠券id查询订单
+            Integer count = query().eq("user_id", userId).eq("voucher_id", voucherId).count();
+            if (count > 0) {
+                // 已经存在
+                log.error("每人限购一单！");
+                return ;
+            }
+
+            // 2、扣库存
+            boolean isSuccess = seckillVoucherService.update()
+                    // 扣减库存
+                    .setSql("stock = stock - 1")
+                    .eq("voucher_id", voucherId)
+                    // 判断库存是否大于0
+                    .gt("stock", 0).update();
+            if (!isSuccess) {
+                // 扣库存失败
+                log.error("库存不足！");
+                return ;
+            }
+
+            // 3、生成订单
+            // 3.1、保存订单信息
+            save(voucherOrder);
+        } finally {
+            // 释放锁
+            lock.unlock();
+        }
     }
 
     /**

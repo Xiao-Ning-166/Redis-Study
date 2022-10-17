@@ -7,6 +7,8 @@
 local voucherId = ARGV[1]
 -- 用户id
 local userId = ARGV[2]
+-- 订单id
+local orderId = ARGV[3]
 
 -- 2、key列表
 -- 库存key
@@ -29,5 +31,9 @@ end
 redis.call('incrby', stockKey, -1)
 -- 3.4、保存用户购买记录
 redis.call('sadd', orderKey, userId)
--- 3.5、返回0，表示有购买资格
+
+-- 3.5、将userId、voucherId、orderId保存到消息队列中
+redis.call('xadd', 'stream.orders', '*', 'userId', userId, 'voucherId', voucherId, 'id', orderId)
+
+-- 3.6、返回0，表示有购买资格
 return 0
