@@ -35,4 +35,12 @@ public interface IUserService extends IService<User> {
      * @return
      */
     Result getProfile();
+
+    /**
+     * 根据id查询用户信息
+     *
+     * @param id 用户id
+     * @return
+     */
+    Result queryUserById(Long id);
 }

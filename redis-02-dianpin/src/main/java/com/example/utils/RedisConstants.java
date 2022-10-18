@@ -82,4 +82,9 @@ public class RedisConstants {
      * 存储博客点赞用户集合的前缀
      */
     public static final String BLOG_LIKED_PREFIX = "blog:liked:";
+
+    /**
+     * 存储用户关注其他用户的前缀
+     */
+    public static final String FOLLOWS_USER_PREFIX = "follows:user:";
 }

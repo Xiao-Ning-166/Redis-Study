@@ -43,4 +43,13 @@ public interface IBlogService extends IService<Blog> {
      * @return
      */
     Result getTop5Liked(Long id);
+
+    /**
+     * 分页查询用户博客信息
+     *
+     * @param userId  用户id
+     * @param current 当前页码。默认为1
+     * @return
+     */
+    Result queryUserBlog(Long userId, Integer current);
 }

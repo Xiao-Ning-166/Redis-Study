@@ -74,6 +74,20 @@ public class BlogController {
     }
 
     /**
+     * 根据id分页查询用户发博客的信息
+     *
+     * @param userId  用户id
+     * @param current 页码。默认为1
+     * @return
+     */
+    @GetMapping("/of/user")
+    public Result queryUserBlog(@RequestParam(value = "id") Long userId,
+                              @RequestParam(value = "current", defaultValue = "1") Integer current) {
+
+        return blogService.queryUserBlog(userId, current);
+    }
+
+    /**
      * 查询热点博客
      *
      * @param current

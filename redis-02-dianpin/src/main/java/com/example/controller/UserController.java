@@ -63,6 +63,17 @@ public class UserController {
         return userService.getProfile();
     }
 
+    /**
+     * 根据id查询用户信息
+     *
+     * @param id 用户id
+     * @return
+     */
+    @GetMapping("/{id}")
+    public Result queryUserById(@PathVariable("id") Long id) {
+        return userService.queryUserById(id);
+    }
+
 
     @GetMapping("/info/{id}")
     public Result info(@PathVariable("id") Long userId){

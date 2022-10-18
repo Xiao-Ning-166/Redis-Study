@@ -46,4 +46,15 @@ public class FollowController {
         return followService.isFollow(id);
     }
 
+    /**
+     * 查询当前登录用户和目标用户的共同关注用户
+     *
+     * @param targetUserId 目标用户
+     * @return
+     */
+    @GetMapping("/common/{id}")
+    public Result followCommons(@PathVariable("id") Long targetUserId) {
+        return followService.followCommons(targetUserId);
+    }
+
 }

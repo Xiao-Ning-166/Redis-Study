@@ -112,7 +112,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
             boolean isSuccess = update().setSql("liked = liked - 1").eq("id", id).update();
             if (isSuccess) {
                 // 4.2、将用户从博客点赞集合中移除
-                redisTemplate.opsForZSet().remove(key, userId);
+                redisTemplate.opsForZSet().remove(key, String.valueOf(userId));
             }
         }
         return Result.ok();
@@ -176,6 +176,33 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
 
         // 4、返回结果
         return Result.ok(userDTOList);
+    }
+
+    /**
+     * 分页查询用户博客信息
+     *
+     * @param userId  用户id
+     * @param current 当前页码。默认为1
+     * @return
+     */
+    @Override
+    public Result queryUserBlog(Long userId, Integer current) {
+        // 根据用户查询
+        Page<Blog> page = query()
+                .eq("user_id", userId).page(new Page<>(current, SystemConstants.MAX_PAGE_SIZE));
+        // 获取当前页数据
+        List<Blog> records = page.getRecords();
+        // 查询用户
+        records.forEach(blog -> {
+            Long id = blog.getUserId();
+            User user = userService.getById(id);
+            blog.setName(user.getNickName());
+            blog.setIcon(user.getIcon());
+
+            // 查询博客是否被当前用户点赞
+            queryBlogLiked(blog);
+        });
+        return Result.ok(records);
     }
 
 }
