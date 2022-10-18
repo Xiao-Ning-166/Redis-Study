@@ -34,9 +34,6 @@ public class BlogController {
     @Resource
     private IBlogService blogService;
 
-    @Resource
-    private IUserService userService;
-
     @PostMapping
     public Result saveBlog(@RequestBody Blog blog) {
         // 获取登录用户
@@ -61,10 +58,7 @@ public class BlogController {
 
     @PutMapping("/like/{id}")
     public Result likeBlog(@PathVariable("id") Long id) {
-        // 修改点赞数量
-        blogService.update()
-                .setSql("liked = liked + 1").eq("id", id).update();
-        return Result.ok();
+        return blogService.updateBlogLike(id);
     }
 
     @GetMapping("/of/me")
@@ -79,21 +73,14 @@ public class BlogController {
         return Result.ok(records);
     }
 
+    /**
+     * 查询热点博客
+     *
+     * @param current
+     * @return
+     */
     @GetMapping("/hot")
     public Result queryHotBlog(@RequestParam(value = "current", defaultValue = "1") Integer current) {
-        // 根据用户查询
-        Page<Blog> page = blogService.query()
-                .orderByDesc("liked")
-                .page(new Page<>(current, SystemConstants.MAX_PAGE_SIZE));
-        // 获取当前页数据
-        List<Blog> records = page.getRecords();
-        // 查询用户
-        records.forEach(blog ->{
-            Long userId = blog.getUserId();
-            User user = userService.getById(userId);
-            blog.setName(user.getNickName());
-            blog.setIcon(user.getIcon());
-        });
-        return Result.ok(records);
+        return blogService.queryHotBlog(current);
     }
 }

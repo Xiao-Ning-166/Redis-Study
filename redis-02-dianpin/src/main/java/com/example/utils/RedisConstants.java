@@ -77,4 +77,9 @@ public class RedisConstants {
      * 存储购买秒杀优惠券用户id的前缀
      */
     public static final String SECKILL_ORDER_PREFIX = "seckill:order:";
+
+    /**
+     * 存储博客点赞用户集合的前缀
+     */
+    public static final String BLOG_LIKED_PREFIX = "blog:liked:";
 }
