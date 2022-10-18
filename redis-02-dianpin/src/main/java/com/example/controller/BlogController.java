@@ -83,4 +83,15 @@ public class BlogController {
     public Result queryHotBlog(@RequestParam(value = "current", defaultValue = "1") Integer current) {
         return blogService.queryHotBlog(current);
     }
+
+    /**
+     * 查询博客前5个点赞的用户信息
+     *
+     * @param id 博客id
+     * @return
+     */
+    @GetMapping("/likes/{id}")
+    public Result getTop5Liked(@PathVariable("id") Long id) {
+        return blogService.getTop5Liked(id);
+    }
 }

@@ -35,4 +35,12 @@ public interface IBlogService extends IService<Blog> {
      * @return
      */
     Result queryHotBlog(Integer current);
+
+    /**
+     * 查询博客前5个点赞的用户信息
+     *
+     * @param id 博客id
+     * @return
+     */
+    Result getTop5Liked(Long id);
 }
